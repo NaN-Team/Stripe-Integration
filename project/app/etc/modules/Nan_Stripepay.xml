@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <Nan_Stripepay>
+            <active>true</active>
+            <codePool>local</codePool>
+        </Nan_Stripepay>
+    </modules>
+</config>

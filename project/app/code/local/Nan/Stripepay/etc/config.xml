@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <Nan_Stripepay>
+            <version>0.1.0</version>
+        </Nan_Stripepay>
+    </modules>
+    <global>
+        <models>
+            <nan_stripepay>
+                <class>Nan_Stripepay_Model</class>
+                <resourceModel>nan_stripepay_resource</resourceModel>
+            </nan_stripepay>
+            <nan_stripepay_resource>
+                <class>Nan_Stripepay_Model_Resource</class>
+            </nan_stripepay_resource>
+        </models>
+        <blocks>
+            <nan_stripepay>
+                <class>Nan_Stripepay_Block</class>
+            </nan_stripepay>
+        </blocks>
+        <helpers>
+            <nan_stripepay>
+                <class>Nan_Stripepay_Helper</class>
+            </nan_stripepay>
+        </helpers>
+        <resources>
+            <nan_stripepay_setup>
+                <setup>
+                    <module>Nan_Stripepay</module>
+                </setup>
+            </nan_stripepay_setup>
+        </resources>
+    </global>
+</config>
