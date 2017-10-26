@@ -23,7 +23,7 @@ class Nan_Stripepay_Helper_Data extends Mage_Core_Helper_Abstract {
      */
     public function getConfigData($data)
     {
-        return Mage::getStoreConfig('payment/nan_stipepay/'. $data);
+        return Mage::getStoreConfig('payment/nan_stripepay/'. $data);
     }
 
     /**

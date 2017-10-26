@@ -9,11 +9,7 @@
         <models>
             <nan_stripepay>
                 <class>Nan_Stripepay_Model</class>
-                <resourceModel>nan_stripepay_resource</resourceModel>
             </nan_stripepay>
-            <nan_stripepay_resource>
-                <class>Nan_Stripepay_Model_Resource</class>
-            </nan_stripepay_resource>
         </models>
         <blocks>
             <nan_stripepay>
@@ -25,13 +21,6 @@
                 <class>Nan_Stripepay_Helper</class>
             </nan_stripepay>
         </helpers>
-        <resources>
-            <nan_stripepay_setup>
-                <setup>
-                    <module>Nan_Stripepay</module>
-                </setup>
-            </nan_stripepay_setup>
-        </resources>
     </global>
     <adminhtml>
         <translate>
@@ -45,6 +34,15 @@
         </translate>
     </adminhtml>
     <frontend>
+        <routers>
+            <nan_stripepay>
+                <use>standard</use>
+                <args>
+                    <module>Nan_Stripepay</module>
+                    <frontName>stripepay</frontName>
+                </args>
+            </nan_stripepay>
+        </routers>
         <translate>
             <modules>
                 <nan_stripepay>
@@ -60,7 +58,7 @@
             <nan_stripepay>
                 <model>nan_stripepay/payment_stripe</model>
                 <stripe_library_version>5.1.3</stripe_library_version>
-                <active>0</active>
+                <active>1</active>
                 <title>NaN Stripe</title>
                 <payment_action>authorize_capture</payment_action>
                 <order_status>pending</order_status>
