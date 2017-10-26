@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<config>
+    <sections>
+        <payment>
+            <groups>
+                <nan_stripepay translate="label" module="nan_stripepay">
+                    <label>NaN Stripepay</label>
+                    <sort_order>300</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <fields>
+                        <active transalte="label">
+                            <label>Enabled</label>
+                            <show_in_default>1</show_in_default>
+                            <show_in_store>1</show_in_store>
+                            <show_in_website>1</show_in_website>
+                            <sort_order>10</sort_order>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <tooltip>Is the payment module enabled?</tooltip>
+                        </active>
+                        <api_key translate="label">
+                            <label>Api key</label>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_store>1</show_in_store>
+                            <show_in_website>1</show_in_website>
+                            <frontend_type>text</frontend_type>
+                            <tooltip>Api key for the payment module - Beware, treat carefully</tooltip>
+                        </api_key>
+                        <type_transaction>
+                            <label>Authorize or Authorize and Capture</label>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_store>1</show_in_store>
+                            <show_in_website>1</show_in_website>
+                            <frontend_type>select</frontend_type>
+                            <source_model>nan_stripepay/system_config_source_typetransaction</source_model>
+                            <tooltip>Api key for the payment module - Beware, treat carefully</tooltip>
+                        </type_transaction>
+                    </fields>
+                </nan_stripepay>
+            </groups>
+        </payment>
+    </sections>
+</config>
