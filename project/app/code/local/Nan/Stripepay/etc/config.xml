@@ -33,4 +33,42 @@
             </nan_stripepay_setup>
         </resources>
     </global>
+    <adminhtml>
+        <translate>
+            <modules>
+                <nan_stripepay>
+                    <files>
+                        <default>Nan_Stripepay.csv</default>
+                    </files>
+                </nan_stripepay>
+            </modules>
+        </translate>
+    </adminhtml>
+    <frontend>
+        <translate>
+            <modules>
+                <nan_stripepay>
+                    <files>
+                        <default>Nan_Stripepay.csv</default>
+                    </files>
+                </nan_stripepay>
+            </modules>
+        </translate>
+    </frontend>
+    <default>
+        <payment>
+            <nan_stripepay>
+                <model>nan_stripepay/payment_stripe</model>
+                <stripe_library_version>5.1.3</stripe_library_version>
+                <active>0</active>
+                <title>NaN Stripe</title>
+                <payment_action>authorize_capture</payment_action>
+                <order_status>pending</order_status>
+                <cctypes>AE,DI,MC,VI</cctypes>
+                <useccv>1</useccv>
+                <supported_currencies>EUR,USD</supported_currencies>
+                <min_order_amount>0.50</min_order_amount>
+            </nan_stripepay>
+        </payment>
+    </default>
 </config>

@@ -4,6 +4,9 @@
         <Nan_Stripepay>
             <active>true</active>
             <codePool>local</codePool>
+            <depends>
+                <Mage_Payment />
+            </depends>
         </Nan_Stripepay>
     </modules>
 </config>
