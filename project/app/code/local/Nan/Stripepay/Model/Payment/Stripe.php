@@ -55,14 +55,14 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
      */
     public function capture(Varien_Object $payment, $amount)
     {
-        // get basic data
-        $order = $payment->getOrder();
-        $billingAddress = $order->getBillingAddress();
+        // Init  error Message
         $errorMsg=0;
 
         // process charge
         try {
-            if($payment->setTransactionId() == null){
+            //Check if transaction exists, if does not, procede with
+            //Auth and Capt
+            if($payment->getTransactionId() == null){
                 $result = $this->callStripe($payment,$amount, true);
                 if($result === false) {
                     $errorMsg = $this->_getHelper()->__('Error Processing the request');
