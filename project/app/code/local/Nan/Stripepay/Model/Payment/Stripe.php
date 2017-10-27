@@ -47,70 +47,53 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
     }
 
     /**
-     * capture
-     *
+     * authorize
      * @param Varien_Object $payment
-     * @param float $amount
+     * @param float         $amount
+     * @return $this
+     */
+    public function authorize(Varien_Object $payment, $amount)
+    {
+        /** @var bool | array $result */
+        $result = $this->callStripe($payment, $amount, false);
+        if ($result === false) {
+            Mage::throwException($this->_getHelper()->__('Error Processing the request'));
+        } else {
+            //transaction correct
+            $payment->setTransactionId($result['transaction_id']);
+            $payment->setData('charge_id', $result['charge_id']);   //FIXME: not permanent, only for this obj
+            Mage::log($result['charge_id']);
+        }
+        return $this;
+    }
+
+    /**
+     * capture
+     * @param Varien_Object $payment
+     * @param float         $amount
      * @return $this|bool
      */
     public function capture(Varien_Object $payment, $amount)
     {
-        // get basic data
-        $order = $payment->getOrder();
-        $billingAddress = $order->getBillingAddress();
-
-        // process charge
         try {
-            if($payment->setTransactionId() == null){
-                $result = $this->callStripe($payment,$amount, true);
-            } else {
-
-                return 0;
+            if ($payment->setTransactionId() != null) {
+                $ch = \Stripe\Charge::retrieve($payment->getChargeId());
+                $ch->capture(); //captured transaction
+            } else {    //case possible, not impossible
+                //authorize and capture
+                $this->callStripe($payment, $amount, true);
             }
-
         } catch (Exception $e) {
-            Mage::log('Nan_Stripepay_Model_Payment_Stripe: there was an error when processing the payment against Stripe. Order Id: ' . $order->getId() . '. Amount: ' . $amount . '. Message: ' . $e);
+            $order = $payment->getOrder();
+            Mage::exception(__CLASS__ . ': there was an error when processing the payment against Stripe. Order Id: ' . $order->getId() . '. Amount: ' . $amount . '. Message: ' . $e);
             return false;
         }
-
         // set Transaction Id
-        $payment->setTransactionId($result->id)->setIsTransactionClosed(0);
+        $payment->setIsTransactionClosed(0);
         return $this;
     }
 
-
-    public function authorize(Varien_Object $payment, $amount)
-    {
-        $errorMsg=0;
-        $result = $this->callStripe($payment,$amount, false);
-
-        if($result === false) {
-            $errorMsg = $this->_getHelper()->__('Error Processing the request');
-        } else {
-            Mage::log($result, null, $this->getCode().'.log');
-            //process result here to check status etc as per payment gateway.
-            // if invalid status throw exception
-
-            if($result['status'] == 1){
-                $payment->setTransactionId($result['transaction_id']);
-                $captureTokenId = $result['token'];
-                Mage::log($captureTokenId);
-
-
-            }else{
-                Mage::throwException($errorMsg);
-            }
-
-            // Add the comment and save the order
-        }
-        if($errorMsg){
-            Mage::throwException($errorMsg);
-        }
-
-        return $this;
-    }
-
-    private function callStripe(Varien_Object $payment, $amount, $authandcap)
+    private function callStripe(Varien_Object $payment, $amount, $auth_cap)
     {
         $order = $payment->getOrder();
         $billingAddress = $order->getBillingAddress();
@@ -120,8 +103,9 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
                 array(
                     'amount'      => $amount * 100,
                     'currency'    => strtolower($order->getBaseCurrencyCode()),
-                    "capture"     => $authandcap,
-                    'token '      => \Stripe\Token::create(array(
+                    "capture"     => $auth_cap,
+                    'source '     => \Stripe\Token::create(
+                        array(
                             'card' => array(
                                 'number'          => $payment->getCcNumber(),
                                 'exp_month'       => sprintf('%02d', $payment->getCcExpMonth()),
@@ -133,19 +117,19 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
                                 'address_zip'     => $billingAddress->getPostcode(),
                                 'address_state'   => $billingAddress->getRegion(),
                                 'address_country' => $billingAddress->getCountry(),
-                            ))
+                            ),
+                        )
                     ),
                     'description' => sprintf('#%s, %s', $order->getIncrementId(), $order->getCustomerEmail()),
                 )
             );
         } catch (Exception $e) {
-            Mage::log('Nan_Stripepay_Model_Payment_Stripe: there was an error when processing the payment against Stripe. Order Id: ' . $order->getId() . '. Amount: ' . $amount . '. Message: ' . $e);
+            Mage::log(__CLASS__ . ': there was an error when processing the payment against Stripe. Order Id: ' . $order->getId() . '. Amount: ' . $amount . '. Message: ' . $e);
             return false;
         }
         Mage::log($charge,'','tokenStripe.txt',true);
-        return ($authandcap) ? $charge : array('status'=>1,'transaction_id' => time() , 'fraud' => rand(0,1) , 'token' => $charge);
+        return $auth_cap ? $charge : array('transaction_id' => time(), 'charge_id' => $charge);
     }
-
 
     /**
      * isAvailable
