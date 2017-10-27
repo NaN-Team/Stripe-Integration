@@ -76,58 +76,57 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
     public function capture(Varien_Object $payment, $amount)
     {
         try {
-            if ($payment->setTransactionId() != null) {
+            if ($payment->getTransactionId() != null) {
                 $ch = \Stripe\Charge::retrieve($payment->getChargeId());
                 $ch->capture(); //captured transaction
             } else {    //case possible, not impossible
                 //authorize and capture
-                $this->callStripe($payment, $amount, true);
+                $result = $this->callStripe($payment, $amount, true);
+                $payment->setTransactionId($result['transaction_id']);
             }
+            $payment->setIsTransactionClosed(0);
         } catch (Exception $e) {
             $order = $payment->getOrder();
-            Mage::exception(__CLASS__ . ': there was an error when processing the payment against Stripe. Order Id: ' . $order->getId() . '. Amount: ' . $amount . '. Message: ' . $e);
+            Mage::log(__CLASS__ . ': there was an error when processing the payment against Stripe. Order Id: ' . $order->getId() . '. Amount: ' . $amount . '. Message: ' . $e);
             return false;
         }
         // set Transaction Id
-        $payment->setIsTransactionClosed(0);
+        die;
         return $this;
     }
 
     private function callStripe(Varien_Object $payment, $amount, $auth_cap)
     {
+        \Stripe\Stripe::setApiKey($this->getConfigData('api_key'));
+
         $order = $payment->getOrder();
         $billingAddress = $order->getBillingAddress();
         // process charge without capture
         try {
+            $token = \Stripe\Token::create(
+                array(
+                    'card' => array(
+                        'number'    => $payment->getCcNumber(),
+                        'exp_month' => sprintf('%02d', $payment->getCcExpMonth()),
+                        'exp_year'  => $payment->getCcExpYear(),
+                        'cvc'       => $payment->getCcCid(),
+                    ),
+                )
+            );
             $charge = \Stripe\Charge::create(
                 array(
                     'amount'      => $amount * 100,
                     'currency'    => strtolower($order->getBaseCurrencyCode()),
-                    "capture"     => $auth_cap,
-                    'source '     => \Stripe\Token::create(
-                        array(
-                            'card' => array(
-                                'number'          => $payment->getCcNumber(),
-                                'exp_month'       => sprintf('%02d', $payment->getCcExpMonth()),
-                                'exp_year'        => $payment->getCcExpYear(),
-                                'cvc'             => $payment->getCcCid(),
-                                'name'            => $billingAddress->getName(),
-                                'address_line1'   => $billingAddress->getStreet(1),
-                                'address_line2'   => $billingAddress->getStreet(2),
-                                'address_zip'     => $billingAddress->getPostcode(),
-                                'address_state'   => $billingAddress->getRegion(),
-                                'address_country' => $billingAddress->getCountry(),
-                            ),
-                        )
-                    ),
+                    'capture'     => $auth_cap,
+                    'source'      => $token->id,
                     'description' => sprintf('#%s, %s', $order->getIncrementId(), $order->getCustomerEmail()),
                 )
             );
+            Mage::log($charge);
         } catch (Exception $e) {
             Mage::log(__CLASS__ . ': there was an error when processing the payment against Stripe. Order Id: ' . $order->getId() . '. Amount: ' . $amount . '. Message: ' . $e);
             return false;
         }
-        Mage::log($charge,'','tokenStripe.txt',true);
         return $auth_cap ? $charge : array('transaction_id' => time(), 'charge_id' => $charge);
     }
 
