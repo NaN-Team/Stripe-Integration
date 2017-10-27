@@ -58,14 +58,34 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
         // get basic data
         $order = $payment->getOrder();
         $billingAddress = $order->getBillingAddress();
+        $errorMsg=0;
 
         // process charge
         try {
             if($payment->setTransactionId() == null){
                 $result = $this->callStripe($payment,$amount, true);
-            } else {
+                if($result === false) {
+                    $errorMsg = $this->_getHelper()->__('Error Processing the request');
+                } else {
+                    Mage::log($result, null, $this->getCode().'.log');
+                    //process result here to check status etc as per payment gateway.
+                    // if invalid status throw exception
 
-                return 0;
+                    if($result['status'] == 1){
+                        $payment->setTransactionId($result['transaction_id']);
+                    }else{
+                        Mage::throwException($errorMsg);
+                    }
+                    // Add the comment and save the order
+                }
+                if($errorMsg){
+                    Mage::throwException($errorMsg);
+                }
+            } else {
+                $chargeid = unserialize($payment->getAdditionalInformation('chargeid'));
+                //TODO transacition already exists, go capture
+                $ch = \Stripe\Charge::retrieve($chargeid);
+                $ch->capture();
             }
 
         } catch (Exception $e) {
@@ -82,6 +102,8 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
     public function authorize(Varien_Object $payment, $amount)
     {
         $errorMsg=0;
+
+
         $result = $this->callStripe($payment,$amount, false);
 
         if($result === false) {
@@ -93,8 +115,12 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
 
             if($result['status'] == 1){
                 $payment->setTransactionId($result['transaction_id']);
-                $captureTokenId = $result['token'];
-                Mage::log($captureTokenId);
+                $payment->setIsTransactionClosed(false);
+
+                //todo insert charge id in database
+                $charge = serialize($result['charge']);
+                $payment->setAdditionalInformation('chargeid', $charge);
+
 
 
             }else{
@@ -116,12 +142,9 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
         $billingAddress = $order->getBillingAddress();
         // process charge without capture
         try {
-            $charge = \Stripe\Charge::create(
-                array(
-                    'amount' => $amount * 100,
-                    'currency' => strtolower($order->getBaseCurrencyCode()),
-                    "capture" => $authandcap,
-                    'card' => array(
+
+            $token = \Stripe\Token::create(array(
+                "card" => array(
                         'number' => $payment->getCcNumber(),
                         'exp_month' => sprintf('%02d', $payment->getCcExpMonth()),
                         'exp_year' => $payment->getCcExpYear(),
@@ -132,7 +155,15 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
                         'address_zip' => $billingAddress->getPostcode(),
                         'address_state' => $billingAddress->getRegion(),
                         'address_country' => $billingAddress->getCountry(),
-                    ),
+                )
+            ));
+
+            $charge = \Stripe\Charge::create(
+                array(
+                    'amount' => $amount * 100,
+                    'currency' => strtolower($order->getBaseCurrencyCode()),
+                    "capture" => $authandcap,
+                    'source' => $token,
                     'description' => sprintf('#%s, %s', $order->getIncrementId(), $order->getCustomerEmail()),
                 )
             );
@@ -141,7 +172,7 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
             return false;
         }
         Mage::log($charge,'','tokenStripe.txt',true);
-        return ($authandcap) ? $charge : array('status'=>1,'transaction_id' => time() , 'fraud' => rand(0,1) , 'token' => $charge);
+        return array('status'=>1,'transaction_id' => time() , 'fraud' => rand(0,1) , 'token' => $token, 'charge' => $charge['id']);
     }
 
 
