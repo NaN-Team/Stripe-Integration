@@ -118,20 +118,22 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
         try {
             $charge = \Stripe\Charge::create(
                 array(
-                    'amount' => $amount * 100,
-                    'currency' => strtolower($order->getBaseCurrencyCode()),
-                    "capture" => $authandcap,
-                    'card' => array(
-                        'number' => $payment->getCcNumber(),
-                        'exp_month' => sprintf('%02d', $payment->getCcExpMonth()),
-                        'exp_year' => $payment->getCcExpYear(),
-                        'cvc' => $payment->getCcCid(),
-                        'name' => $billingAddress->getName(),
-                        'address_line1' => $billingAddress->getStreet(1),
-                        'address_line2' => $billingAddress->getStreet(2),
-                        'address_zip' => $billingAddress->getPostcode(),
-                        'address_state' => $billingAddress->getRegion(),
-                        'address_country' => $billingAddress->getCountry(),
+                    'amount'      => $amount * 100,
+                    'currency'    => strtolower($order->getBaseCurrencyCode()),
+                    "capture"     => $authandcap,
+                    'token '      => \Stripe\Token::create(array(
+                            'card' => array(
+                                'number'          => $payment->getCcNumber(),
+                                'exp_month'       => sprintf('%02d', $payment->getCcExpMonth()),
+                                'exp_year'        => $payment->getCcExpYear(),
+                                'cvc'             => $payment->getCcCid(),
+                                'name'            => $billingAddress->getName(),
+                                'address_line1'   => $billingAddress->getStreet(1),
+                                'address_line2'   => $billingAddress->getStreet(2),
+                                'address_zip'     => $billingAddress->getPostcode(),
+                                'address_state'   => $billingAddress->getRegion(),
+                                'address_country' => $billingAddress->getCountry(),
+                            ))
                     ),
                     'description' => sprintf('#%s, %s', $order->getIncrementId(), $order->getCustomerEmail()),
                 )
