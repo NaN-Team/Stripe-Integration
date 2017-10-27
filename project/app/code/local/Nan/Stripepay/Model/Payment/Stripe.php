@@ -1,4 +1,5 @@
 <?php
+//Adrenaline Circuit
 /**
  * Class Nan_Stripepay_Helper_Data
  */
@@ -9,7 +10,7 @@ require_once(Mage::getBaseDir('lib') . DS . 'stripe-php' . DS . 'init.php');
 /**
  * Class Nan_Stripepay_Model_Payment_Stripe
  * Payment model for Stripe
- * @author  NaN Team
+ * @author  NaN Team (Adrenaline)
  * @version 0.1.0
  * @package StripePay
  */
@@ -79,7 +80,7 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
     {
         try {
             if ($payment->getTransactionId() != null) {
-                $ch = \Stripe\Charge::retrieve($payment->getAdditionalInformation()['charge_id']);
+                $ch = \Stripe\Charge::retrieve($payment->getAdditionalInformation('charge_id'));
                 $ch->capture(); //captured transaction
             } else {
                 //authorize and capture
@@ -87,6 +88,9 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
                 $payment->setTransactionId($result['transaction_id']);
             }
             $payment->setIsTransactionClosed(true);
+            /** @var Mage_Sales_Model_Order $order */
+            $order = $payment->getOrder();
+            //$order->setState(Mage_Sales_Model_Order::STATE_COMPLETE);   //FIXME: FIXIT! DO IT!
         } catch (Exception $e) {
             $order = $payment->getOrder();
             Mage::log(__CLASS__ . ': there was an error when processing the payment against Stripe. Order Id: ' . $order->getId() . '. Amount: ' . $amount . '. Message: ' . $e);
@@ -95,6 +99,13 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
         return $this;
     }
 
+    /**
+     * callStripe
+     * @param Varien_Object $payment
+     * @param               $amount
+     * @param               $auth_cap
+     * @return array|bool|\Stripe\Charge
+     */
     private function callStripe(Varien_Object $payment, $amount, $auth_cap)
     {
         //set API KEY
@@ -135,12 +146,11 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
             Mage::log(__CLASS__ . ': there was an error when processing the payment against Stripe. Order Id: ' . $order->getId() . '. Amount: ' . $amount . '. Message: ' . $e);
             return false;
         }
-        return $auth_cap ? $charge : array('transaction_id' => time(), 'charge_id' => $charge);
+        return $auth_cap ? $charge : array('transaction_id' => time(), 'charge_id' => $charge->id);
     }
 
     /**
      * isAvailable
-     *
      * Is this method available?
      * @param null $quote
      * @return bool
@@ -148,8 +158,7 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
     public function isAvailable($quote = null)
     {
         // check order total
-        if ($quote && $quote->getBaseGrandTotal() < Mage::helper('nan_stripepay')->getConfigData('min_order_amount'))
-        {
+        if ($quote && $quote->getBaseGrandTotal() < Mage::helper('nan_stripepay')->getConfigData('min_order_amount')) {
             return false;
         }
         return parent::isAvailable($quote);
@@ -157,7 +166,6 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
 
     /**
      * canUseForCurrency
-     *
      * Is available for this currency?
      * @param string $currencyCode
      * @return bool
