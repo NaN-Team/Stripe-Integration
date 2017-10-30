@@ -62,10 +62,8 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
         } else {
             //transaction correct
             $payment->setTransactionId($result['transaction_id']);
-            $addInformation = array(
-                'charge_id' => $result['charge_id'],
-            );
-            $payment->setAdditionalInformation($addInformation);
+            $payment->setIsTransactionClosed(false);
+            $payment->setAdditionalInformation('charge_id', serialize($result['charge_id']));
         }
         return $this;
     }
@@ -80,7 +78,7 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
     {
         try {
             if ($payment->getTransactionId() != null) {
-                $ch = \Stripe\Charge::retrieve($payment->getAdditionalInformation('charge_id'));
+                $ch = \Stripe\Charge::retrieve(unserialize($payment->getAdditionalInformation('charge_id')));
                 $ch->capture(); //captured transaction
             } else {
                 //authorize and capture
@@ -88,9 +86,6 @@ class Nan_Stripepay_Model_Payment_Stripe extends Mage_Payment_Model_Method_Cc
                 $payment->setTransactionId($result['transaction_id']);
             }
             $payment->setIsTransactionClosed(true);
-            /** @var Mage_Sales_Model_Order $order */
-            $order = $payment->getOrder();
-            //$order->setState(Mage_Sales_Model_Order::STATE_COMPLETE);   //FIXME: FIXIT! DO IT!
         } catch (Exception $e) {
             $order = $payment->getOrder();
             Mage::log(__CLASS__ . ': there was an error when processing the payment against Stripe. Order Id: ' . $order->getId() . '. Amount: ' . $amount . '. Message: ' . $e);
